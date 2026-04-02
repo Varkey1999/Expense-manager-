@@ -166,9 +166,36 @@
       </div>
       <button class="btn-save" onclick="saveSettings()">Save Settings</button>
 
-      <div class="settings-group danger-zone">
-        <label class="settings-label">Data</label>
+      <div class="settings-group">
+        <label class="settings-label">Import Expenses</label>
+        <div class="import-grid">
+          <label class="btn-import" title="Import GPay PDF statement">
+            <span>📄</span><span>GPay PDF</span>
+            <input type="file" accept=".pdf" onchange="importGPayPDF(event)" style="display:none" />
+          </label>
+          <button class="btn-import" onclick="openGPayTextModal()">
+            <span>📋</span><span>Paste Text</span>
+          </button>
+          <label class="btn-import" title="Import CSV file">
+            <span>📊</span><span>Import CSV</span>
+            <input type="file" accept=".csv,.txt" onchange="importCSV(event)" style="display:none" />
+          </label>
+          <label class="btn-import" title="Restore from backup">
+            <span>🔄</span><span>Restore</span>
+            <input type="file" accept=".json" onchange="importBackup(event)" style="display:none" />
+          </label>
+        </div>
+        <p class="import-hint">GPay: Download PDF statement from Google Pay app → Statements</p>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Export & Backup</label>
         <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+        <button class="btn-export" onclick="exportBackup()" style="margin-top:8px">Download JSON Backup</button>
+      </div>
+
+      <div class="settings-group danger-zone">
+        <label class="settings-label">Danger</label>
         <button class="btn-danger" onclick="clearAllData()">Clear All Data</button>
       </div>
       <div class="app-info">
@@ -214,9 +241,28 @@
   </div>
 </div>
 
+<!-- GPAY TEXT PASTE MODAL -->
+<div class="modal-overlay hidden" id="gpay-text-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title">Paste GPay Statement</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      In Google Pay → <strong>Statements</strong> → select month → <strong>Copy all text</strong> and paste below.
+    </p>
+    <textarea id="gpay-paste-area" class="form-input" rows="8"
+      placeholder="Paste your GPay statement text here...&#10;&#10;It should look like:&#10;01 Mar, 2026&#10;04:26 AM&#10;Paid to SOME MERCHANT&#10;UPI Transaction ID: ...&#10;Paid by Federal Bank&#10;₹552"></textarea>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeGPayTextModal()">Cancel</button>
+      <button class="btn-add" onclick="processGPayText()">Import</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast hidden" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script src="app.js"></script>
 </body>
 </html>
