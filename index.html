@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0d0d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Spendwise" />
+  <meta name="description" content="Smart expense tracker for your business" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <title>Spendwise — Expense Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="14" fill="#C8FF00"/>
+      <path d="M14 24C14 18.477 18.477 14 24 14C29.523 14 34 18.477 34 24C34 29.523 29.523 34 24 34" stroke="#0d0d0d" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M24 19V24L27 27" stroke="#0d0d0d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="16" cy="33" r="2" fill="#0d0d0d"/>
+    </svg>
+    <span>Spendwise</span>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app" class="hidden">
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Overview</span>
+    </button>
+    <button class="nav-btn" data-view="expenses" onclick="switchView('expenses')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Expenses</span>
+    </button>
+    <button class="nav-btn fab-btn" onclick="openModal()">
+      <div class="fab-inner">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </button>
+    <button class="nav-btn" data-view="analytics" onclick="switchView('analytics')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Analytics</span>
+    </button>
+    <button class="nav-btn" data-view="settings" onclick="switchView('settings')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- VIEWS -->
+  <main class="view-container">
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view active">
+      <header class="view-header">
+        <div>
+          <p class="greeting" id="greeting-text">Good morning</p>
+          <h1 id="user-display-name">Varghese</h1>
+        </div>
+        <div class="header-avatar" id="avatar-circle">V</div>
+      </header>
+
+      <div class="balance-card">
+        <div class="balance-label">Total Spent This Month</div>
+        <div class="balance-amount" id="total-month">₹0</div>
+        <div class="balance-sub">
+          <span id="dash-count">0 transactions</span>
+          <span class="balance-trend" id="balance-trend"></span>
+        </div>
+        <div class="balance-bar-wrap">
+          <div class="balance-bar" id="balance-bar" style="width:0%"></div>
+        </div>
+        <div class="balance-bar-labels">
+          <span>₹0</span>
+          <span id="budget-label">Budget: ₹0</span>
+        </div>
+      </div>
+
+      <div class="section-row">
+        <h2 class="section-title">By Category</h2>
+      </div>
+      <div class="category-chips" id="category-chips"></div>
+
+      <div class="section-row">
+        <h2 class="section-title">Recent</h2>
+        <button class="see-all" onclick="switchView('expenses')">See all</button>
+      </div>
+      <div class="tx-list" id="recent-list"></div>
+    </section>
+
+    <!-- EXPENSES -->
+    <section id="view-expenses" class="view">
+      <header class="view-header">
+        <h1>Expenses</h1>
+        <div class="filter-row">
+          <select id="filter-month" class="filter-select" onchange="renderExpenses()">
+            <option value="all">All Time</option>
+          </select>
+          <select id="filter-cat" class="filter-select" onchange="renderExpenses()">
+            <option value="all">All Categories</option>
+          </select>
+        </div>
+      </header>
+      <div class="tx-list" id="expense-list"></div>
+      <div class="empty-state hidden" id="expense-empty">
+        <div class="empty-icon">📋</div>
+        <p>No expenses yet.<br/>Tap <strong>+</strong> to add one.</p>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section id="view-analytics" class="view">
+      <header class="view-header">
+        <h1>Analytics</h1>
+      </header>
+      <div class="analytics-month-selector">
+        <button onclick="changeAnalyticsMonth(-1)" class="month-nav">‹</button>
+        <span id="analytics-month-label"></span>
+        <button onclick="changeAnalyticsMonth(1)" class="month-nav">›</button>
+      </div>
+      <div class="analytics-total-card">
+        <span class="analytics-total-label">Total Spent</span>
+        <span class="analytics-total-val" id="analytics-total">₹0</span>
+      </div>
+      <div class="donut-wrap">
+        <canvas id="donut-canvas" width="220" height="220"></canvas>
+        <div class="donut-center">
+          <span id="donut-label">—</span>
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="bar-chart-section">
+        <h3 class="section-title">Daily Spending</h3>
+        <canvas id="bar-canvas" width="340" height="160"></canvas>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view">
+      <header class="view-header">
+        <h1>Settings</h1>
+      </header>
+      <div class="settings-group">
+        <label class="settings-label">Your Name</label>
+        <input type="text" id="settings-name" class="settings-input" placeholder="Enter your name" />
+      </div>
+      <div class="settings-group">
+        <label class="settings-label">Monthly Budget (₹)</label>
+        <input type="number" id="settings-budget" class="settings-input" placeholder="e.g. 50000" />
+      </div>
+      <div class="settings-group">
+        <label class="settings-label">Currency Symbol</label>
+        <input type="text" id="settings-currency" class="settings-input" maxlength="3" placeholder="₹" />
+      </div>
+      <button class="btn-save" onclick="saveSettings()">Save Settings</button>
+
+      <div class="settings-group danger-zone">
+        <label class="settings-label">Data</label>
+        <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+        <button class="btn-danger" onclick="clearAllData()">Clear All Data</button>
+      </div>
+      <div class="app-info">
+        <p>Spendwise v1.0</p>
+        <p>All data stored on your device</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ADD EXPENSE MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modal-title">Add Expense</h2>
+
+    <div class="form-group">
+      <label>Amount (₹)</label>
+      <input type="number" id="form-amount" class="form-input big-input" placeholder="0.00" inputmode="decimal" />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <input type="text" id="form-desc" class="form-input" placeholder="What did you spend on?" />
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <div class="cat-grid" id="cat-grid"></div>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="form-date" class="form-input" />
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="form-notes" class="form-input" rows="2" placeholder="Any extra details..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-add" onclick="saveExpense()" id="btn-save-expense">Add Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
