@@ -487,94 +487,188 @@ function mapCategoryName(name) {
 
 // ──────────────────────────────────────────────
 // GPAY PDF TEXT IMPORT — Auto-classifier
+// Tested against real Varkey GPay PDF (March 2026)
 // ──────────────────────────────────────────────
 
-// Keywords → category mapping (order matters: more specific first)
+const MON_MAP = { jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',
+                  jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12' };
+
+// Classification rules — specific before generic, all lowercase
 const CLASSIFY_RULES = [
-  // Transport
-  { cat: 'transport', keywords: ['metro', 'railways', 'railway', 'msrtc', 'uts', 'ola', 'rapido', 'roppen', 'uber', 'bus', 'parking', 'toll', 'petrol', 'fuel', 'pump', 'motor store', 'adani airport', 'airport'] },
-  // Bills / Insurance / Finance
-  { cat: 'bills', keywords: ['electricity', 'adani electricity', 'hdfc ergo', 'care health insurance', 'bajaj life insurance', 'insurance', 'zerodha', 'sbi atm', 'atm cash', 'upi lite'] },
+  // Transport — specific apps & services first
+  { cat: 'transport', kw: ['indian railways', 'railways uts', 'msrtc', 'roppen transportation',
+      'mumbai metro', 'metro one', 'adani airport', 'sahar parking', 'ss multiservices',
+      'rapido', 'uber', 'ola cab', 'toll', 'petrol', 'fuel', 'service station',
+      'motor store', 'motor stores', 'parking'] },
+  // Bills — insurance, utilities, finance
+  { cat: 'bills', kw: ['adani electricity', 'hdfc ergo', 'care health insurance',
+      'bajaj life insurance', 'insurance', 'zerodha', 'sbi atm cash withdrawal',
+      'atm cash', 'india1 payments', 'animesh kumar'] },
   // Health
-  { cat: 'health', keywords: ['medical', 'pharmacy', 'wellness forever', 'hospital', 'clinic', 'doctor', 'medicine', 'chemist'] },
-  // Food & Drink (restaurants, cafes, food-sounding names)
-  { cat: 'food', keywords: ['restaurant', 'hotel ', 'cafe', 'food', 'kitchen', 'swagat', 'bharat cafe', 'doolally', 'adda', 'semolina', 'victory restaurant', 'district dining', 'compass india food', 'cafe 2', 'wines', 'bar '] },
-  // Shopping / Supermarket
-  { cat: 'shopping', keywords: ['super market', 'supermarket', 'bazar', 'store', 'enterprises', 'market', 'mall', 'kashyap'] },
+  { cat: 'health', kw: ['wellness forever', 'pharmacy', 'medical', 'hospital',
+      'clinic', 'doctor', 'chemist', 'medicine'] },
+  // Food — restaurants, cafes, canteen, bars
+  { cat: 'food', kw: ['compass india food', 'the adda', 'swagat restaurant',
+      'swagat enterprise', 'hotel prithviraj', 'victory restaurant', 'district dining',
+      'doolally', 'bharat cafe', 'cafe 2', 'semolina kitchen', 'n r wines',
+      'restaurant', 'kitchen', 'cafe', 'hotel ', 'dining', 'food services',
+      'wines', 'bar '] },
+  // Shopping — supermarkets, stores, markets
+  { cat: 'shopping', kw: ['sweety home super market', 'supermarket', 'super market',
+      'kashyap corporations', 'apala bazar', 'bazar', 'market', 'store', 'mall',
+      'enterprises'] },
   // Entertainment
-  { cat: 'entertain', keywords: ['starlit studio', 'studio', 'netflix', 'amazon', 'hotstar', 'spotify', 'google play', 'cinema', 'movie'] },
-  // Travel
-  { cat: 'travel', keywords: ['air india', 'indigo', 'spicejet', 'makemytrip', 'goibibo', 'oyo', 'hotel booking'] },
+  { cat: 'entertain', kw: ['starlit studio', 'studio', 'netflix', 'amazon prime',
+      'hotstar', 'spotify', 'google play', 'cinema', 'movie', 'edunetwork'] },
+  // Travel — intercity/flights
+  { cat: 'travel', kw: ['air india', 'indigo', 'spicejet', 'makemytrip',
+      'goibibo', 'oyo', 'hotel booking'] },
 ];
 
-function classifyByName(name, amount) {
-  const n = (name || '').toLowerCase();
+// Vehicle registration plate pattern → auto/cab payment
+const PLATE_RE = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/;
 
-  // Rule: ≤ ₹20 and no transport/travel match → chai
-  const isTransportLike = ['metro', 'railway', 'bus', 'uts', 'parking', 'toll', 'roppen', 'rapido', 'ola', 'uber'].some(k => n.includes(k));
-  if (amount <= 20 && !isTransportLike) return 'food'; // chai / small snack
-
-  for (const rule of CLASSIFY_RULES) {
-    if (rule.keywords.some(k => n.includes(k))) return rule.cat;
-  }
-
-  return null; // unknown → will be marked cross-check
+// Looks like a person's name (2–4 words, title-cased, no numbers)
+function looksLikePersonName(name) {
+  const honorifics = /^(mr|mrs|ms|dr|prof|sri|smt)\s/i;
+  const n = name.replace(honorifics, '').trim();
+  const words = n.split(/\s+/);
+  if (words.length < 2 || words.length > 5) return false;
+  // All words start with capital or are fully uppercase (like GPay stores them)
+  return words.every(w => /^[A-Za-z]{2,}$/.test(w));
 }
 
-function parseGPayText(text) {
+function classifyByName(name, amount) {
+  const n = (name || '').toLowerCase().trim();
+
+  // Vehicle plate → transport (auto rickshaw payment)
+  if (PLATE_RE.test(name.trim().toUpperCase())) return 'transport';
+
+  // Transport keywords — specific enough to avoid false matches
+  const isTransport = ['mumbai metro', 'metro one', 'indian railways', 'railways uts',
+    'msrtc', 'roppen', 'rapido', 'ola cab', 'uber', 'sahar parking',
+    'ss multiservices', 'adani airport', 'service station', 'motor store',
+    'toll', 'petrol', 'fuel'].some(k => n.includes(k));
+  if (isTransport) return 'transport';
+
+  // ≤ ₹20 with non-transport name → chai / small purchase → food
+  if (amount <= 20) return 'food';
+
+  // Check all rules
+  for (const rule of CLASSIFY_RULES) {
+    if (rule.kw.some(k => n.includes(k))) return rule.cat;
+  }
+
+  // Person name → likely personal transfer → cross-check
+  if (looksLikePersonName(name)) return null;
+
+  // Single-word ALL-CAPS names that are common vendors (laxman, sangeeta etc)
+  // → small amounts treated as food/chai
+  if (amount <= 100 && /^[A-Z\s]+$/.test(name.trim())) return 'food';
+
+  return null; // → cross-check
+}
+
+function parseGPayText(rawText) {
   /*
-    GPay statement text pattern per transaction:
-    DD Mon, YYYY\nHH:MM AM/PM\nPaid to NAME\nUPI Transaction ID: XXXX\nPaid by BANK\n₹AMOUNT
-
-    We also handle "Received from" (skip those - income not expense)
-    and "Top-up to UPI Lite" (skip — internal transfer)
+   Real GPay PDF text structure (from actual statement):
+   
+   Each page starts with noise:
+     "Transaction statement"
+     "8547222360, varkey1999@gmail.com"
+     "Note: This statement..."
+     "Page X of Y"
+     "Date & time Transaction details Amount"  ← table header
+   
+   Each transaction block:
+     "01 Mar, 2026"          ← date (matches /^\d{1,2} \w+, \d{4}$/)
+     "04:26 AM"              ← time (matches /^\d{1,2}:\d{2} (AM|PM)$/)
+     "Paid to MERCHANT"      ← or "Received from" or "Top-up to UPI Lite"
+     "UPI Transaction ID: XXXXXXXXX"
+     "Paid by Federal Bank 4934"   ← bank line (variants below)
+     "₹552"                  ← amount (starts with ₹)
+   
+   Bank line variants:
+     "Paid by Federal Bank 4934"
+     "Paid by State Bank of India 2212"
+     "Paid by UPI Lite | State Bank of India 2212"
+     "Paid by Federal Bank XX99 | RuPay credit card"
   */
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Strip page headers — lines matching noise patterns
+  const NOISE = [
+    /^Transaction statement$/i,
+    /^\d{10},\s*.+@.+$/,           // phone, email line
+    /^Note: This statement/i,
+    /^Page \d+ of \d+$/i,
+    /^Date & time/i,
+    /^Powered by/i,
+    /^Any payments transactions/i,
+    /^received\. Any payments/i,
+    /^8547/,                        // phone number line
+  ];
+
+  const lines = rawText
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0 && !NOISE.some(re => re.test(l)));
+
+  const DATE_RE  = /^(\d{1,2})\s+(\w{3}),?\s+(\d{4})$/;
+  const TIME_RE  = /^\d{1,2}:\d{2}\s+(AM|PM)$/i;
+  const UPI_RE   = /^UPI Transaction ID:/i;
+  const BANK_RE  = /^Paid by /i;
+  const AMT_RE   = /^₹[\d,]+(\.\d+)?$/;
+
   const parsed = [];
-
   let i = 0;
+
   while (i < lines.length) {
-    // Look for date line: "01 Mar, 2026" or similar
-    const dateLine = lines[i];
-    const dateMatch = dateLine.match(/^(\d{1,2})\s+(\w+),?\s+(\d{4})$/);
-    if (!dateMatch) { i++; continue; }
+    const line = lines[i];
 
-    // Parse date
-    const day = dateMatch[1].padStart(2, '0');
-    const monMap = { jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12' };
-    const mon = monMap[dateMatch[2].toLowerCase().slice(0,3)] || '01';
-    const year = dateMatch[3];
+    // Look for date
+    const dm = line.match(DATE_RE);
+    if (!dm) { i++; continue; }
+
+    const day  = dm[1].padStart(2, '0');
+    const mon  = MON_MAP[dm[2].toLowerCase()] || '01';
+    const year = dm[3];
     const date = `${year}-${mon}-${day}`;
+    i++;
 
-    // Next line: time
-    i++;
-    // Skip time line
-    i++;
+    // Expect time next (skip if missing)
+    if (i < lines.length && TIME_RE.test(lines[i])) i++;
 
     if (i >= lines.length) break;
 
     const txLine = lines[i]; i++;
+    const txLower = txLine.toLowerCase();
 
-    // Skip received / top-up (not expenses)
-    if (txLine.toLowerCase().startsWith('received from') || txLine.toLowerCase().startsWith('top-up')) {
-      // skip until amount line
-      while (i < lines.length && !lines[i].startsWith('₹')) i++;
-      i++; continue;
+    // Skip: Received from (income), Top-up to UPI Lite (internal)
+    const skip = txLower.startsWith('received from') || txLower.startsWith('top-up to');
+    if (skip) {
+      // Advance past UPI ID, bank line, amount
+      while (i < lines.length && !AMT_RE.test(lines[i]) && !DATE_RE.test(lines[i])) i++;
+      if (i < lines.length && AMT_RE.test(lines[i])) i++; // consume amount
+      continue;
     }
 
-    // Must be "Paid to NAME"
-    if (!txLine.toLowerCase().startsWith('paid to')) { continue; }
-    const recipientName = txLine.replace(/^paid to\s+/i, '').trim();
+    if (!txLower.startsWith('paid to')) continue;
 
-    // Skip UPI ID line and bank line
-    while (i < lines.length && !lines[i].startsWith('₹')) i++;
-    if (i >= lines.length) break;
+    const recipient = txLine.replace(/^paid to\s+/i, '').trim();
 
-    const amtLine = lines[i]; i++;
-    const amount = parseFloat(amtLine.replace(/[₹,]/g, '').trim());
+    // Advance past UPI ID line, bank line(s) to reach amount
+    while (i < lines.length && !AMT_RE.test(lines[i]) && !DATE_RE.test(lines[i])) {
+      i++;
+    }
+
+    if (i >= lines.length || !AMT_RE.test(lines[i])) continue;
+
+    const amtStr = lines[i].replace(/[₹,]/g, '');
+    i++;
+    const amount = parseFloat(amtStr);
     if (isNaN(amount) || amount <= 0) continue;
 
-    parsed.push({ date, name: recipientName, amount });
+    parsed.push({ date, name: recipient, amount });
   }
 
   return parsed;
